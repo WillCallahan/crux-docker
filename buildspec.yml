@@ -1,0 +1,32 @@
+version: 0.2
+
+env:
+  variables:
+    LOG_DIR: logs
+    CRUX_VERSION: 19.09-1.5.0-alpha
+
+  exported-variables:
+    - BUILD_VERSION
+
+phases:
+  install:
+    commands:
+      - BRANCH_NAME=$(echo "${CODEBUILD_SOURCE_VERSION}" | sed 's/refs\/heads\///')
+      - UTC_DATE=$(date --utc +%FT%H-%M-%S%Z)
+      - COMMIT_HASH=$(echo ${CODEBUILD_RESOLVED_SOURCE_VERSION} | cut -c1-8)
+      - lein install
+
+  build:
+    commands:
+      - lein uberjar
+
+  post_build:
+    finally:
+      - BUILD_VERSION=${BRANCH_NAME}-${UTC_DATE}-${COMMIT_HASH}
+
+artifacts:
+  base-directory: target
+  files:
+    - 'crux-docker-standalone.jar'
+  discard-paths: yes
+  name: crux-docker-standalone-${BUILD_VERSION}.zip
