@@ -32,7 +32,7 @@ phases:
 
   build:
     commands:
-      - docker build --build-arg JAR_FILE=crux-docker-standalone.jar ${AWS_ECR_REPOSITORY_URI}:latest "${BUILD_DIRECTORY}"
+      - docker build --build-arg JAR_FILE=crux-docker-standalone.jar -t ${AWS_ECR_REPOSITORY_URI}:latest "${BUILD_DIRECTORY}"
       - docker tag ${AWS_ECR_REPOSITORY_URI}:latest ${AWS_ECR_REPOSITORY_URI}:${IMAGE_TAG}
 
   post_build:
@@ -48,3 +48,7 @@ artifacts:
     - 'cloudformation-template-configuration.json'
   discard-paths: yes
   name: crux-docker-standalone-${BUILD_VERSION}
+
+cache:
+  paths:
+    - '~/.m2/**/*'

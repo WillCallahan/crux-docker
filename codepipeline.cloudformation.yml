@@ -98,8 +98,9 @@ Resources:
         EncryptionDisabled: false
         Type: CODEPIPELINE
       Cache:
-        Location: NO_CACHE
-        Type: NO_CACHE
+        Location: LOCAL
+        Modes: LOCAL_CUSTOM_CACHE
+        Type: LOCAL
       Description: !Sub Crux (${AWS::StackName})
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
