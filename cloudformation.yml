@@ -96,7 +96,7 @@ Resources:
   CruxSecurityHostGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: ${AWS::StackName}-host-scty-grp
+      GroupName: !Sub ${AWS::StackName}-host-scty-grp
       GroupDescription: Seciruty Group for the Crux Node
       SecurityGroupEgress:
         - IpProtocol: tcp
@@ -115,7 +115,7 @@ Resources:
   CruxSecurityClientGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: ${AWS::StackName}-client-scty-grp
+      GroupName: !Sub ${AWS::StackName}-client-scty-grp
       GroupDescription: Seciruty Group to acceess the Crux Node
       VpcId:
         Fn::ImportValue:
