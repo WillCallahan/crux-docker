@@ -33,5 +33,6 @@ artifacts:
   files:
     - 'crux-docker-standalone.jar'
     - 'version'
+    - 'Dockerfile'
   discard-paths: yes
   name: crux-docker-standalone-${BUILD_VERSION}
