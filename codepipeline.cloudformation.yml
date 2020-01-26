@@ -208,7 +208,12 @@ Resources:
         - Name: Source
           Actions:
             - Name: SourceAction
-              Namespace: !Sub ${AWS::StackName}-source-ns
+              Namespace:
+                !Join
+                  - '_'
+                  - !Split
+                    - '-'
+                    - !Sub ${AWS::StackName}-source-ns
               Region: !Sub ${AWS::Region}
               ActionTypeId:
                 Category: Source
@@ -216,7 +221,12 @@ Resources:
                 Version: 1
                 Provider: GitHub
               OutputArtifacts:
-                - Name: !Sub ${AWS::StackName}-source
+                - Name:
+                    !Join
+                      - '_'
+                      - !Split
+                        - '-'
+                        - !Sub ${AWS::StackName}-source
               Configuration:
                 Owner: WillCallahan
                 Repo: crux-docker
@@ -227,12 +237,27 @@ Resources:
         - Name: Build
           Actions:
             - Name: BuildAction
-              Namespace: !Sub ${AWS::StackName}-build-ns
+              Namespace:
+                  !Join
+                    - '_'
+                    - !Split
+                      - '-'
+                      - !Sub ${AWS::StackName}-build-ns
               Region: !Sub ${AWS::Region}
               InputArtifacts:
-                - Name: !Sub ${AWS::StackName}-source
+                - Name:
+                    !Join
+                      - '_'
+                      - !Split
+                        - '-'
+                        - !Sub ${AWS::StackName}-source
               OutputArtifacts:
-                - Name: !Sub ${AWS::StackName}-build
+                - Name:
+                    !Join
+                      - '_'
+                      - !Split
+                        - '-'
+                        - !Sub ${AWS::StackName}-build
               ActionTypeId:
                 Category: Build
                 Owner: AWS
@@ -242,11 +267,26 @@ Resources:
                 ProjectName: !Ref CruxCodeBuild
               RunOrder: 2
             - Name: EcrPushAction
-              Namespace: !Sub ${AWS::StackName}-ecr-push-ns
+              Namespace:
+                !Join
+                  - '_'
+                  - !Split
+                    - '-'
+                    - !Sub ${AWS::StackName}-ecr-push-ns
               Region: !Sub ${AWS::Region}
               InputArtifacts:
-                - Name: !Sub ${AWS::StackName}-source
-                - Name: !Sub ${AWS::StackName}-build
+                - Name:
+                    !Join
+                      - '_'
+                      - !Split
+                        - '-'
+                        - !Sub ${AWS::StackName}-source
+                - Name:
+                    !Join
+                      - '_'
+                      - !Split
+                        - '-'
+                        - !Sub ${AWS::StackName}-build
               ActionTypeId:
                 Category: Build
                 Owner: AWS
@@ -254,15 +294,46 @@ Resources:
                 Provider: CodeBuild
               Configuration:
                 ProjectName: !Ref CruxEcrCodeBuild
-                PrimarySource: !Sub ${AWS::StackName}-source
+                PrimarySource:
+                  !Join
+                    - '_'
+                    - !Split
+                      - '-'
+                      - !Sub ${AWS::StackName}-source
                 EnvironmentVariables:
-                  SOURCE_ARTIFACT_NAME: !Sub ${AWS::StackName}-source
-                  BUILD_ARTIFACT_NAME: !Sub ${AWS::StackName}-build
+                  !Sub
+                    - '[${Values}]'
+                    - Values:
+                        !Join
+                          - ','
+                          - - !Sub
+                              - '{"name":"${Name}","value":"${Value}","type":"PLAINTEXT"}'
+                              - Name: SOURCE_ARTIFACT_NAME
+                                Value:
+                                  !Join
+                                    - '_'
+                                    - !Split
+                                      - '-'
+                                      - !Sub ${AWS::StackName}-source
+                            - !Sub
+                              - '{"name":"${Name}","value":"${Value}","type":"PLAINTEXT"}'
+                              - Name: BUILD_ARTIFACT_NAME
+                                Value:
+                                  !Join
+                                    - '_'
+                                    - !Split
+                                      - '-'
+                                      - !Sub ${AWS::StackName}-build
               RunOrder: 3
         - Name: Approval
           Actions:
             - Name: ApprovalAction
-              Namespace: !Sub ${AWS::StackName}-approval-ns
+              Namespace:
+                !Join
+                  - '_'
+                  - !Split
+                    - '-'
+                    - !Sub ${AWS::StackName}-approval-ns
               Region: !Sub ${AWS::Region}
               ActionTypeId:
                 Category: Approval
@@ -276,8 +347,18 @@ Resources:
               Namespace: !Sub ${AWS::StackName}-deploy-ns
               Region: !Sub ${AWS::Region}
               InputArtifacts:
-                - Name: !Sub ${AWS::StackName}-source
-                - Name: !Sub ${AWS::StackName}-build
+                - Name:
+                    !Join
+                      - '_'
+                      - !Split
+                        - '-'
+                        - !Sub ${AWS::StackName}-source
+                - Name:
+                    !Join
+                      - '_'
+                      - !Split
+                        - '-'
+                        - !Sub ${AWS::StackName}-build
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
@@ -290,9 +371,22 @@ Resources:
                 RoleArn:
                   Fn::ImportValue:
                     !Sub ${SecurityStackName}-CodePipelineRoleArn
-                TemplatePath: !Sub ${AWS::StackName}-source::cloudformation.yml
+                TemplatePath:
+                  !Join
+                    - '_'
+                    - !Split
+                      - '-'
+                      - !Sub ${AWS::StackName}-source::cloudformation.yml
                 OutputFileName: !Sub ${AWS::StackName}-stack.json
-                TemplateConfiguration: !Sub ${AWS::StackName}-build::cloudformation-template-configuration.json
+                TemplateConfiguration:
+                  !Sub
+                    - '${ArtifactName}::cloudformation-template-configuration.json'
+                    - ArtifactName:
+                        !Join
+                          - '_'
+                          - !Split
+                            - '-'
+                            - !Sub ${AWS::StackName}-build
               RunOrder: 5
       ArtifactStore:
         Type: S3
