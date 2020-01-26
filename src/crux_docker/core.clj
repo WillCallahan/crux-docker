@@ -1,32 +1,15 @@
 (ns crux-docker.core
   "Internal development namespace for Crux. For end-user usage, see
   examples.clj"
-  (:require [clojure.java.io :as io]
-            [clojure.tools.namespace.repl :as tn]
-            [clojure.tools.logging :as log]
-            [clojure.spec.alpha :as s]
+  (:require [clojure.tools.logging :as log]
             [crux.node :as n]
-            [crux.standalone :as standalone]
-            [crux.db :as db]
             [crux.api :as crux]
-            [crux.index :as idx]
-            [crux.kafka.embedded :as ek]
-            [crux.kv :as kv]
             [crux.http-server :as srv]
-            [crux.codec :as c]
-            [crux.io :as cio]
-            [crux.kafka :as k]
-            [crux.memory :as mem]
-            [crux.rdf :as rdf]
-            [crux.query :as q])
-  (:import [crux.api Crux ICruxAPI]
-           [ch.qos.logback.classic Level Logger]
-           org.slf4j.LoggerFactory
-           java.io.Closeable
-           java.util.Date)
+            [crux.io :as cio])
+  (:import [crux.api ICruxAPI])
   (:gen-class))
 
-(def storage-dir "dev-storage")
+(def storage-dir "crux-storage")
 
 (defn get-env
   [key default parse]
@@ -41,11 +24,8 @@
 (defn dev-node-option-defaults []
   {:crux.node/topology                    'crux.kafka/topology
    :crux.node/kv-store                    'crux.kv.rocksdb/kv
-   ;:crux.node/kv-store                    'crux.kv.memdb/kv
    :crux.kv/db-dir                        (get-env "STORAGE_DIR" (str storage-dir "/data") str)
    :crux.kv.memdb/persist-on-close?       true
-   ;:crux.kv/sync?                         true
-   ;:crux.kv/check-and-store-index-version true
    :crux.kafka/bootstrap-servers          (get-env "KAFKA_BOOTSTRAP_SERVER" "10.0.127.51:9092" str)})
 
 (defn dev-http-option-defaults []
@@ -94,39 +74,10 @@
     (alter-var-root #'node stop-dev-node))
   :stopped)
 
-(defn clear []
-  (alter-var-root #'node (constantly nil)))
-
-(defn reset []
-  (stop)
-  (let [result (tn/refresh :after 'dev/start)]
-    (if (instance? Throwable result)
-      (throw result)
-      result)))
-
 (defn delete-storage []
   (stop)
   (cio/delete-dir storage-dir)
   :ok)
-
-(defn set-log-level! [ns level]
-  (.setLevel ^Logger (LoggerFactory/getLogger (name ns))
-             (when level
-               (Level/valueOf (name level)))))
-
-(defn get-log-level! [ns]
-  (some->> (.getLevel ^Logger (LoggerFactory/getLogger (name ns)))
-           (str)
-           (.toLowerCase)
-           (keyword)))
-
-(defmacro with-log-level [ns level & body]
-  (let [level# (get-log-level! ~ns)]
-    (try
-      (set-log-level! ~ns ~level)
-      ~@body
-      (finally
-        (set-log-level! ~ns level#)))))
 
 (n/install-uncaught-exception-handler!)
 
