@@ -12,6 +12,12 @@ Parameters:
     Description: GitHub OAuth Token for use by CodePipeline
     Type: 'AWS::SSM::Parameter::Value<String>'
     Default: /dev/github-code-pipeline-oauth
+    NoEcho: true
+
+  GitHubBranchName:
+    Description: GitHub branch to use by default
+    Type: String
+    Default: mater
 
   BuildSpecPath:
     Description: Relative path to the buildspec.yml in the repo
@@ -39,7 +45,7 @@ Parameters:
     Default: database/crux
 
   CodePipelineArtifactPrefix:
-    Description: ECR Container Image to push after docker image is built
+    Description: Artifact name prefix to use in CodePipeline
     Type: String
     AllowedPattern: "[a-z0-9_]*"
     Default: crux_codepipeline
@@ -121,7 +127,7 @@ Resources:
         BuildSpec: !Ref BuildSpecPath
         GitCloneDepth: 0
         Type: CODEPIPELINE
-      SourceVersion: refs/heads/master
+      SourceVersion: !Sub refs/heads/${GitHubBranchName}
       Tags:
         - Key: Service
           Value: Code Build
@@ -181,7 +187,7 @@ Resources:
         BuildSpec: !Ref BuildSpecEcrPath
         GitCloneDepth: 0
         Type: CODEPIPELINE
-      SourceVersion: refs/heads/master
+      SourceVersion: !Sub refs/heads/${GitHubBranchName}
       Tags:
         - Key: Service
           Value: Code Build
@@ -226,7 +232,7 @@ Resources:
               Configuration:
                 Owner: WillCallahan
                 Repo: crux-docker
-                Branch: master
+                Branch: !Sub ${GitHubBranchName}
                 OAuthToken: !Ref GitHubOauthToken
                 PollForSourceChanges: false
               RunOrder: 1
@@ -262,8 +268,19 @@ Resources:
                 ProjectName: !Ref CruxEcrCodeBuild
                 PrimarySource: !Sub ${CodePipelineArtifactPrefix}_source
                 EnvironmentVariables:
-                  SOURCE_ARTIFACT_NAME: !Sub ${CodePipelineArtifactPrefix}_source
-                  BUILD_ARTIFACT_NAME: !Sub ${CodePipelineArtifactPrefix}_build
+                  !Sub
+                  - '[${Values}]'
+                  - Values:
+                      !Join
+                      - ','
+                      - - !Sub
+                          - '{"name":"${Name}","value":"${Value}","type":"PLAINTEXT"}'
+                          - Name: SOURCE_ARTIFACT_NAME
+                            Value: !Sub ${CodePipelineArtifactPrefix}_source
+                        - !Sub
+                          - '{"name":"${Name}","value":"${Value}","type":"PLAINTEXT"}'
+                          - Name: BUILD_ARTIFACT_NAME
+                            Value: !Sub ${CodePipelineArtifactPrefix}_build
               RunOrder: 3
         - Name: Approval
           Actions:
