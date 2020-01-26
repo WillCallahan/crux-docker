@@ -28,7 +28,82 @@ Parameters:
     Type: String
     Default: database/crux:latest
 
+  KafkaBootstrapServer:
+    Description: Address of the Kafka bootstrap server
+    Type: String
+    Default: kafka.callahanwilliam.com:9092
+
 Resources:
+
+  CruxLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      IpAddressType: ipv4
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: 300
+        - Key: access_logs.s3.enabled
+          Value: false
+        - Key: deletion_protection.enabled
+          Value: false
+      Name: !Sub ${AWS::StackName}-elb
+      Scheme: internal
+      SecurityGroups:
+        - !Ref CruxSecurityHostGroup
+        - !Ref CruxSecurityClientGroup
+      Subnets:
+        - Fn::ImportValue:
+            !Sub ${NetworkStackName}-PrivateSubnet1
+        - Fn::ImportValue:
+            !Sub ${NetworkStackName}-PrivateSubnet2
+      Tags:
+        - Key: Service
+          Value: Crux
+        - Key: Provider
+          Value: Juxt
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-elb
+      Type: application
+
+  CruxListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - TargetGroupArn: !Ref CruxTargetGroup
+          Type: forward
+          Order: 1
+      LoadBalancerArn: !Ref CruxLoadBalancer
+      Port: 3000
+      Protocol: HTTP
+
+  CruxTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: CruxLoadBalancer
+    Properties:
+      HealthCheckEnabled: true
+      HealthCheckIntervalSeconds: 6
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckPort: 3000
+      HealthCheckTimeoutSeconds: 15
+      HealthyThresholdCount: 2
+      Matcher:
+        HttpCode: 200
+      Name: !Sub ${AWS::StackName}-elb-tg
+      TargetType: ip
+      Port: 3000
+      Protocol: HTTP
+      UnhealthyThresholdCount: 5
+      VpcId:
+        Fn::ImportValue:
+          !Sub ${NetworkStackName}-Vpc
+      Tags:
+        - Key: Service
+          Value: Crux
+        - Key: Provider
+          Value: Juxt
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-elb-tg
 
   CruxService:
     Type: AWS::ECS::Service
@@ -54,6 +129,17 @@ Resources:
                 !Sub ${NetworkStackName}-PrivateSubnet1
             - Fn::ImportValue:
                 !Sub ${NetworkStackName}-PrivateSubnet2
+      LoadBalancers:
+        - ContainerName: !Sub ${AWS::StackName}-ecs-cd
+          ContainerPort: 3000
+          TargetGroupArn: !Ref CruxTargetGroup
+      Tags:
+        - Key: Service
+          Value: Crux
+        - Key: Provider
+          Value: Juxt
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-ecs-service
 
   CruxTaskDefinition:
     Type: AWS::ECS::TaskDefinition
@@ -65,7 +151,7 @@ Resources:
       RequiresCompatibilities:
         - FARGATE
       ContainerDefinitions:
-        - Name: !Sub ${AWS::StackName}
+        - Name: !Sub ${AWS::StackName}-ecs-cd
           DisableNetworking: false
           PortMappings:
             - ContainerPort: 3000
@@ -85,12 +171,30 @@ Resources:
                   !Sub ${LoggingStackName}-DatabaseLogGroupName
               awslogs-region: !Sub ${AWS::Region}
               awslogs-stream-prefix: !Sub ${AWS::StackName}
+          Environment:
+            - Name: HEALTH_CHECK_THRESHOLD
+              Value: 5
+            - Name: HEALTH_CHECK_INTERVAL
+              Value: 6
+            - Name: HEALTH_CHECK_WAIT_TIME
+              Value: 5
+            - Name: KAFKA_BOOTSTRAP_SERVER
+              Value: !Ref KafkaBootstrapServer
+            - Name: SERVER_PORT
+              Value: 3000
       ExecutionRoleArn:
         Fn::ImportValue:
           !Sub ${SecurityStackName}-FargateReadonlyRoleArn
       TaskRoleArn:
         Fn::ImportValue:
           !Sub ${SecurityStackName}-FargateReadonlyRoleArn
+      Tags:
+        - Key: Service
+          Value: Crux
+        - Key: Provider
+          Value: Juxt
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-ecs-cd
 
   CruxSecurityHostGroup:
     Type: AWS::EC2::SecurityGroup
@@ -110,6 +214,13 @@ Resources:
       VpcId:
         Fn::ImportValue:
           !Sub ${NetworkStackName}-Vpc
+      Tags:
+        - Key: Service
+          Value: Crux
+        - Key: Provider
+          Value: Juxt
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-host-sq
 
   CruxSecurityClientGroup:
     Type: AWS::EC2::SecurityGroup
@@ -119,6 +230,13 @@ Resources:
       VpcId:
         Fn::ImportValue:
           !Sub ${NetworkStackName}-Vpc
+      Tags:
+        - Key: Service
+          Value: Crux
+        - Key: Provider
+          Value: Juxt
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-client-sq
 
 Outputs:
   CruxSecurityClientGroupName:
@@ -128,3 +246,7 @@ Outputs:
   CruxSecurityClientGroupId:
     Description: Crux Node Client Security Group Id
     Value: !GetAtt CruxSecurityClientGroup.GroupId
+
+  CruxLoadBalancerDnsName:
+    Description: Crux Load Balancer Dns Name
+    Value: !GetAtt CruxLoadBalancer.DNSName
