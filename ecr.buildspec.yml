@@ -32,7 +32,10 @@ phases:
 
   build:
     commands:
-      - docker build --build-arg JAR_FILE=crux-docker-standalone.jar -t ${AWS_ECR_REPOSITORY_URI}:latest "${BUILD_DIRECTORY}"
+      - ls -la
+      - cd "${BUILD_DIRECTORY}"
+      - ls -la
+      - docker build --build-arg JAR_FILE=crux-docker-standalone.jar -t ${AWS_ECR_REPOSITORY_URI}:latest .
       - docker tag ${AWS_ECR_REPOSITORY_URI}:latest ${AWS_ECR_REPOSITORY_URI}:${IMAGE_TAG}
 
   post_build:
