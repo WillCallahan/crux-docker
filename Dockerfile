@@ -14,4 +14,4 @@ WORKDIR /app
 
 ENTRYPOINT ["java"]
 
-CMD ["-jar", "target/crux-docker-standalone.jar"]
+CMD ["-jar", "crux-docker-standalone.jar"]
