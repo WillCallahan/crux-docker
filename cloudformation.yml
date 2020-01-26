@@ -78,7 +78,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 0
           ToPort: 65535
-          SourceSecurityGroupId: !Ref CruxSecurityClientGroup
+          DestinationSecurityGroupId: !Ref CruxSecurityClientGroup
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 3000
