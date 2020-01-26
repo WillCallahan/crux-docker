@@ -6,6 +6,7 @@ env:
     CRUX_VERSION: 19.09-1.5.0-alpha
     AWS_REGION: us-east-1
     AWS_ECR_REPOSITORY_URI: arn:<AWS_PARTITION>:ecr:<AWS_REGION>:<AWS_ACCOUNT_ID>:<ECR_REPOSITORY>
+    BUILD_ARTIFACT_NAME: <BUILD_ARTIFACT_NAME>
 
   exported-variables:
     - BUILD_VERSION
@@ -18,6 +19,7 @@ phases:
     commands:
       - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 --storage-driver=overlay&
       - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
+      - SOURCE_DIRECTORY="${CODEBUILD_SRC_DIR}"
       - BUILD_ENV_NAME="CODEBUILD_SRC_DIR_${BUILD_ARTIFACT_NAME}"
       - BUILD_DIRECTORY=$(eval "echo \$${BUILD_ENV_NAME}")
       - BUILD_VERSION=$(cat "${BUILD_DIRECTORY}/version")
@@ -34,6 +36,7 @@ phases:
   build:
     commands:
       - cd "${BUILD_DIRECTORY}"
+      - cp "${SOURCE_DIRECTORY}/Dockerfile" .
       - docker build --build-arg JAR_FILE=crux-docker-standalone.jar -t ${AWS_ECR_REPOSITORY_URI}:latest .
       - docker tag ${AWS_ECR_REPOSITORY_URI}:latest ${AWS_ECR_REPOSITORY_URI}:${IMAGE_TAG}
 
