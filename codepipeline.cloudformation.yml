@@ -38,6 +38,12 @@ Parameters:
     Type: String
     Default: database/crux
 
+  CodePipelineArtifactPrefix:
+    Description: ECR Container Image to push after docker image is built
+    Type: String
+    AllowedPattern: "[a-z0-9_]*"
+    Default: crux_codepipeline
+
   CruxStackName:
     Description: Name of the Crux Node Stack to Create
     Type: String
@@ -208,12 +214,7 @@ Resources:
         - Name: Source
           Actions:
             - Name: SourceAction
-              Namespace:
-                !Join
-                  - '_'
-                  - !Split
-                    - '-'
-                    - !Sub ${AWS::StackName}-source-ns
+              Namespace: !Sub ${CodePipelineArtifactPrefix}_source_ns
               Region: !Sub ${AWS::Region}
               ActionTypeId:
                 Category: Source
@@ -221,12 +222,7 @@ Resources:
                 Version: 1
                 Provider: GitHub
               OutputArtifacts:
-                - Name:
-                    !Join
-                      - '_'
-                      - !Split
-                        - '-'
-                        - !Sub ${AWS::StackName}-source
+                - Name: !Sub ${CodePipelineArtifactPrefix}_source
               Configuration:
                 Owner: WillCallahan
                 Repo: crux-docker
@@ -237,27 +233,12 @@ Resources:
         - Name: Build
           Actions:
             - Name: BuildAction
-              Namespace:
-                  !Join
-                    - '_'
-                    - !Split
-                      - '-'
-                      - !Sub ${AWS::StackName}-build-ns
+              Namespace: !Sub ${CodePipelineArtifactPrefix}_build-ns
               Region: !Sub ${AWS::Region}
               InputArtifacts:
-                - Name:
-                    !Join
-                      - '_'
-                      - !Split
-                        - '-'
-                        - !Sub ${AWS::StackName}-source
+                - Name: !Sub ${CodePipelineArtifactPrefix}_source
               OutputArtifacts:
-                - Name:
-                    !Join
-                      - '_'
-                      - !Split
-                        - '-'
-                        - !Sub ${AWS::StackName}-build
+                - Name: !Sub ${CodePipelineArtifactPrefix}_build
               ActionTypeId:
                 Category: Build
                 Owner: AWS
@@ -267,26 +248,11 @@ Resources:
                 ProjectName: !Ref CruxCodeBuild
               RunOrder: 2
             - Name: EcrPushAction
-              Namespace:
-                !Join
-                  - '_'
-                  - !Split
-                    - '-'
-                    - !Sub ${AWS::StackName}-ecr-push-ns
+              Namespace: !Sub ${CodePipelineArtifactPrefix}_ecr_push_ns
               Region: !Sub ${AWS::Region}
               InputArtifacts:
-                - Name:
-                    !Join
-                      - '_'
-                      - !Split
-                        - '-'
-                        - !Sub ${AWS::StackName}-source
-                - Name:
-                    !Join
-                      - '_'
-                      - !Split
-                        - '-'
-                        - !Sub ${AWS::StackName}-build
+                - Name: !Sub ${CodePipelineArtifactPrefix}_source
+                - Name: !Sub ${CodePipelineArtifactPrefix}_build
               ActionTypeId:
                 Category: Build
                 Owner: AWS
@@ -294,46 +260,15 @@ Resources:
                 Provider: CodeBuild
               Configuration:
                 ProjectName: !Ref CruxEcrCodeBuild
-                PrimarySource:
-                  !Join
-                    - '_'
-                    - !Split
-                      - '-'
-                      - !Sub ${AWS::StackName}-source
+                PrimarySource: !Sub ${CodePipelineArtifactPrefix}_source
                 EnvironmentVariables:
-                  !Sub
-                    - '[${Values}]'
-                    - Values:
-                        !Join
-                          - ','
-                          - - !Sub
-                              - '{"name":"${Name}","value":"${Value}","type":"PLAINTEXT"}'
-                              - Name: SOURCE_ARTIFACT_NAME
-                                Value:
-                                  !Join
-                                    - '_'
-                                    - !Split
-                                      - '-'
-                                      - !Sub ${AWS::StackName}-source
-                            - !Sub
-                              - '{"name":"${Name}","value":"${Value}","type":"PLAINTEXT"}'
-                              - Name: BUILD_ARTIFACT_NAME
-                                Value:
-                                  !Join
-                                    - '_'
-                                    - !Split
-                                      - '-'
-                                      - !Sub ${AWS::StackName}-build
+                  SOURCE_ARTIFACT_NAME: !Sub ${CodePipelineArtifactPrefix}_source
+                  BUILD_ARTIFACT_NAME: !Sub ${CodePipelineArtifactPrefix}_build
               RunOrder: 3
         - Name: Approval
           Actions:
             - Name: ApprovalAction
-              Namespace:
-                !Join
-                  - '_'
-                  - !Split
-                    - '-'
-                    - !Sub ${AWS::StackName}-approval-ns
+              Namespace: !Sub ${CodePipelineArtifactPrefix}_approval_ns
               Region: !Sub ${AWS::Region}
               ActionTypeId:
                 Category: Approval
@@ -344,21 +279,11 @@ Resources:
         - Name: Deploy
           Actions:
             - Name: DeployAction
-              Namespace: !Sub ${AWS::StackName}-deploy-ns
+              Namespace: !Sub ${CodePipelineArtifactPrefix}_deploy_ns
               Region: !Sub ${AWS::Region}
               InputArtifacts:
-                - Name:
-                    !Join
-                      - '_'
-                      - !Split
-                        - '-'
-                        - !Sub ${AWS::StackName}-source
-                - Name:
-                    !Join
-                      - '_'
-                      - !Split
-                        - '-'
-                        - !Sub ${AWS::StackName}-build
+                - Name: !Sub ${CodePipelineArtifactPrefix}_source
+                - Name: !Sub ${CodePipelineArtifactPrefix}_build
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
@@ -371,22 +296,9 @@ Resources:
                 RoleArn:
                   Fn::ImportValue:
                     !Sub ${SecurityStackName}-CodePipelineRoleArn
-                TemplatePath:
-                  !Join
-                    - '_'
-                    - !Split
-                      - '-'
-                      - !Sub ${AWS::StackName}-source::cloudformation.yml
-                OutputFileName: !Sub ${AWS::StackName}-stack.json
-                TemplateConfiguration:
-                  !Sub
-                    - '${ArtifactName}::cloudformation-template-configuration.json'
-                    - ArtifactName:
-                        !Join
-                          - '_'
-                          - !Split
-                            - '-'
-                            - !Sub ${AWS::StackName}-build
+                TemplatePath: !Sub ${CodePipelineArtifactPrefix}_source::cloudformation.yml
+                OutputFileName: !Sub ${CodePipelineArtifactPrefix}_stack.json
+                TemplateConfiguration: !Sub ${CodePipelineArtifactPrefix}_build::cloudformation-template-configuration.json
               RunOrder: 5
       ArtifactStore:
         Type: S3
