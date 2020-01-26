@@ -81,7 +81,7 @@ Resources:
     DependsOn: CruxLoadBalancer
     Properties:
       HealthCheckEnabled: true
-      HealthCheckIntervalSeconds: 6
+      HealthCheckIntervalSeconds: 20
       HealthCheckPath: /
       HealthCheckProtocol: HTTP
       HealthCheckPort: 3000
