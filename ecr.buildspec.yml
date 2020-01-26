@@ -19,10 +19,12 @@ phases:
       - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 --storage-driver=overlay&
       - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
       - BUILD_ENV_NAME="CODEBUILD_SRC_DIR_${BUILD_ARTIFACT_NAME}"
-      - echo "BUILD_ENV_NAME ${BUILD_ENV_NAME}"
       - BUILD_DIRECTORY=$(eval "echo \$${BUILD_ENV_NAME}")
-      - echo "BUILD_DIRECTORY ${BUILD_ENV_NAME}"
+      - BUILD_VERSION=$(cat "${BUILD_DIRECTORY}/version")
       - IMAGE_TAG=${BUILD_VERSION:=latest}
+      - echo "BUILD_ENV_NAME ${BUILD_ENV_NAME}"
+      - echo "BUILD_DIRECTORY ${BUILD_DIRECTORY}"
+      - echo "BUILD_VERSION ${BUILD_VERSION}"
 
   pre_build:
     commands:
@@ -31,11 +33,7 @@ phases:
 
   build:
     commands:
-      - ls -la ../
-      - ls -la
-      - pwd
       - cd "${BUILD_DIRECTORY}"
-      - ls -la
       - docker build --build-arg JAR_FILE=crux-docker-standalone.jar -t ${AWS_ECR_REPOSITORY_URI}:latest .
       - docker tag ${AWS_ECR_REPOSITORY_URI}:latest ${AWS_ECR_REPOSITORY_URI}:${IMAGE_TAG}
 
@@ -51,7 +49,7 @@ artifacts:
   files:
     - 'cloudformation-template-configuration.json'
   discard-paths: yes
-  name: crux-docker-standalone-${BUILD_VERSION}
+  name: crux-docker-ecr-standalone-${BUILD_VERSION}
 
 cache:
   paths:

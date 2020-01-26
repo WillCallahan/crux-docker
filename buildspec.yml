@@ -26,7 +26,7 @@ phases:
 
   post_build:
     finally:
-      - echo ${BUILD_VERSION} > version
+      - echo ${BUILD_VERSION} > target/version
 
 artifacts:
   base-directory: target
