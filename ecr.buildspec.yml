@@ -7,6 +7,7 @@ env:
     AWS_REGION: us-east-1
     AWS_ECR_REPOSITORY_URI: arn:<AWS_PARTITION>:ecr:<AWS_REGION>:<AWS_ACCOUNT_ID>:<ECR_REPOSITORY>
     BUILD_ARTIFACT_NAME: <BUILD_ARTIFACT_NAME>
+    BUILD_VERSION: <BUILD_VERSION>
 
   exported-variables:
     - BUILD_VERSION
@@ -22,7 +23,6 @@ phases:
       - SOURCE_DIRECTORY="${CODEBUILD_SRC_DIR}"
       - BUILD_ENV_NAME="CODEBUILD_SRC_DIR_${BUILD_ARTIFACT_NAME}"
       - BUILD_DIRECTORY=$(eval "echo \$${BUILD_ENV_NAME}")
-      - BUILD_VERSION=$(cat "${BUILD_DIRECTORY}/version")
       - IMAGE_TAG=${BUILD_VERSION:=latest}
       - echo "SOURCE_DIRECTORY ${SOURCE_DIRECTORY}"
       - echo "BUILD_ENV_NAME ${BUILD_ENV_NAME}"
@@ -48,7 +48,6 @@ phases:
       - docker push ${AWS_ECR_REPOSITORY_URI}:${IMAGE_TAG}
 
 artifacts:
-  base-directory: target
   files:
     - 'cloudformation-template-configuration.json'
   discard-paths: yes

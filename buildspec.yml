@@ -25,14 +25,12 @@ phases:
 
   post_build:
     finally:
-      - echo ${BUILD_VERSION} > target/version
       - cp Dockerfile target/Dockerfile
 
 artifacts:
   base-directory: target
   files:
     - 'crux-docker-standalone.jar'
-    - 'version'
     - 'Dockerfile'
   discard-paths: yes
   name: crux-docker-standalone-${BUILD_VERSION}
