@@ -11,7 +11,7 @@ Project to start running [Crux] on docker.
 | LOG_DIR                     | Logging directory                               | `/var/crux/logs`  |
 | HEALTH_CHECK_THRESHOLD      | Number of health check failures before shutdown | 3                 |
 | HEALTH_CHECK_INTERVAL       | Frequency of health checks (sec)                | 5                 |
-| HEALTH_CHECK_WAIT_TIME      | Wait time before starting health checks (sec)   | 30                |
+| HEALTH_CHECK_WAIT_TIME      | Wait time before starting health checks (sec)   | 5                 |
 | STORAGE_DIR                 | Data storage directory                          | `/dev/crrux-data` |
 | KAFKA_BOOTSTRAP_SERVER      | Kafka Bootstrap Server Address                  | `localhost:9092`  |
 | SERVER_PORT                 | Crux HTTP API Server Port                       | 3000              |

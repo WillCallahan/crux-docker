@@ -16,7 +16,6 @@
                  [org.clojure/tools.logging "0.4.1"]
                  [juxt/crux-core ~crux-version]
                  [juxt/crux-rocksdb ~crux-version]
-                 [juxt/crux-lmdb ~crux-version]
                  [juxt/crux-kafka ~crux-version]
                  [juxt/crux-kafka-connect ~crux-version]
                  [juxt/crux-kafka-embedded ~crux-version]

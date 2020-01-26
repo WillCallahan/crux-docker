@@ -9,5 +9,8 @@ ENV LOG_DIR /app/logs
 
 EXPOSE ${SERVER_PORT}/tcp
 
+WORKDIR /app
+
 ENTRYPOINT ["java"]
+
 CMD ["-jar", "${JAR_FILE}"]

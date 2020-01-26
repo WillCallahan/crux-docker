@@ -23,43 +23,58 @@
            [ch.qos.logback.classic Level Logger]
            org.slf4j.LoggerFactory
            java.io.Closeable
-           java.util.Date))
+           java.util.Date)
+  (:gen-class))
 
 (def storage-dir "dev-storage")
 
 (defn get-env
-  [key default]
-  (or (System/getenv key) default))
+  [key default parse]
+  (if-let [env (System/getenv key)]
+    (parse env)
+    default))
 
-(defn dev-option-defaults [storage-dir]
-  {:crux.node/topology k/topology
-   :crux.kafka.embedded/zookeeper-data-dir (str storage-dir "/zookeeper")
-   :crux.kafka.embedded/kafka-log-dir (str storage-dir "/kafka-log")
-   :crux.kafka.embedded/kafka-port 9092
-   :dev/embed-kafka? true
-   :dev/http-server? true
-   :dev/node-start-fn n/start
-   :crux.node/db-dir (get-env "STORAGE_DIR" (str storage-dir "/data"))
-   :crux.kafka/bootstrap-servers (get-env "KAFKA_BOOTSTRAP_SERVER" "localhost:9092")
-   :server-port (get-env "SERVER_PORT" 3000)})
+(defn parse-int
+  [i]
+  (Integer/parseInt i))
 
-(def dev-options (dev-option-defaults storage-dir))
+(defn dev-node-option-defaults []
+  {:crux.node/topology                    'crux.kafka/topology
+   :crux.node/kv-store                    'crux.kv.rocksdb/kv
+   ;:crux.node/kv-store                    'crux.kv.memdb/kv
+   :crux.kv/db-dir                        (get-env "STORAGE_DIR" (str storage-dir "/data") str)
+   :crux.kv.memdb/persist-on-close?       true
+   ;:crux.kv/sync?                         true
+   ;:crux.kv/check-and-store-index-version true
+   :crux.kafka/bootstrap-servers          (get-env "KAFKA_BOOTSTRAP_SERVER" "10.0.127.51:9092" str)})
+
+(defn dev-http-option-defaults []
+  {:server-port (get-env "SERVER_PORT" 3000 parse-int)
+   :cors-access-control
+                [:access-control-allow-origin [#".*"]
+                 :access-control-allow-headers ["X-Requested-With"
+                                                "Content-Type"
+                                                "Cache-Control"
+                                                "Origin"
+                                                "Accept"
+                                                "Authorization"
+                                                "X-Custom-Header"]
+                 :access-control-allow-methods [:get :post]]})
+
+(def node-options (dev-node-option-defaults))
+
+(def http-options (dev-http-option-defaults))
 
 (def ^ICruxAPI node)
 
-(defn start-dev-node ^crux.api.ICruxAPI [{:dev/keys [embed-kafka? http-server? node-topology node-start-fn] :as options}]
+(defn start-dev-node ^crux.api.ICruxAPI [node-options http-options]
   (let [started (atom [])]
     (try
-      (let [embedded-kafka (when embed-kafka?
-                             (doto (ek/start-embedded-kafka options)
-                               (->> (swap! started conj))))
-            cluster-node (doto (node-start-fn options)
+      (let [cluster-node (doto (crux/start-node node-options)
                            (->> (swap! started conj)))
-            http-server (when http-server?
-                          (srv/start-http-server (merge cluster-node options)))]
+            http-server (srv/start-http-server cluster-node http-options)]
         (assoc cluster-node
-          :http-server http-server
-          :embedded-kafka embedded-kafka))
+          :http-server http-server))
       (catch Throwable t
         (doseq [c (reverse @started)]
           (cio/try-close c))
@@ -70,7 +85,7 @@
     (cio/try-close c)))
 
 (defn start []
-  (alter-var-root #'node (fn [_] (start-dev-node dev-options)))
+  (alter-var-root #'node (fn [_] (start-dev-node node-options http-options)))
   :started)
 
 (defn stop []
@@ -106,79 +121,56 @@
            (keyword)))
 
 (defmacro with-log-level [ns level & body]
-  `(let [level# (get-log-level! ~ns)]
-     (try
-       (set-log-level! ~ns ~level)
-       ~@body
-       (finally
-         (set-log-level! ~ns level#)))))
+  (let [level# (get-log-level! ~ns)]
+    (try
+      (set-log-level! ~ns ~level)
+      ~@body
+      (finally
+        (set-log-level! ~ns level#)))))
 
 (n/install-uncaught-exception-handler!)
 
-;; Usage, create a dev/$USER.clj file like this, and add it to
-;; .gitignore:
-
-;; Optional, helps when evaluating buffer in Emacs, will be evaluated
-;; in the context of the dev ns:
-;; (ns dev)
-;; ;; Override the storage dir:
-;; (def storage-dir "foo")
-;; ;; And override some options:
-;; (def dev-options (merge (dev-option-defaults storage-dir)
-;;                         {:server-port 9090}))
-
-;; Example to use a standalone node with the normal Crux dev
-;; workflow:
-
-;; (ns dev)
-;; (def storage-dir "dev-storage-standalone")
-;; (def dev-options (merge (dev-option-defaults storage-dir)
-;;                         {:crux.node/topology :crux.standalone/topology
-;;                          :event-log-dir (str storage-dir "/event-log")
-;;                          :crux.standalone/event-log-sync-interval-ms 1000
-;;                          :dev/embed-kafka? false
-;;                          :dev/http-server? false
-;;                          :dev/node-start-fn standalone/start-node}))
-
-;; (when (io/resource (str (System/getenv "USER") ".clj"))
-;;   (load (System/getenv "USER")))
-
+(defn- health-check-internal
+  [node]
+  (log/info "Getting status")
+  (try {:healthy (crux/status node)}
+       (catch Exception e {:unhealthy e})))
 
 (defn health-check
   [node]
   (if node
-    (do
-      (log/info "Getting status")
-      (let [status (crux/status node)]
-        (log/infof "Got Status: %s" status))
-      :healthy)
+    (let [status (health-check-internal node)]
+      (log/infof "Got Status: %s" status)
+      status)
     (do
       (log/info "Node is not defied")
-      :unhealthy)))
+      :unhealthy (IllegalStateException. "Node is not defined"))))
 
 (def health-check-threshold
-  (get-env "HEALTH_CHECK_THRESHOLD" 3))
+  (get-env "HEALTH_CHECK_THRESHOLD" 3 parse-int))
 
 (def health-check-interval
-  (* (get-env "HEALTH_CHECK_INTERVAL" 5) 1000))
+  (* (get-env "HEALTH_CHECK_INTERVAL" 5 parse-int) 1000))
 
 (def health-check-wait-time
-  (* (get-env "HEALTH_CHECK_WAIT_TIME" 30) 1000))
+  (* (get-env "HEALTH_CHECK_WAIT_TIME" 5 parse-int) 1000))
 
 (def heal-check-failures (atom 0))
 
 (defn -main
   [& args]
   (log/info "Starting crux node")
-  (future (start))
-  (log/info "Waiting for node to start")
+  (start)
+  (log/infof "Waiting for node to start (%s sec)" health-check-wait-time)
   (Thread/sleep health-check-wait-time)
-  (log/info "Starting health checks")
+  (log/infof "Starting health checks  Threshold=%s Interval=%s" health-check-threshold health-check-interval)
   (while (<= @heal-check-failures health-check-threshold)
     (do
-      (if (= (health-check node) :healthy)
-        (swap! heal-check-failures inc)
-        (swap! heal-check-failures #(max 0 (dec %))))
+      (if (contains? (health-check node) :healthy)
+        (swap! heal-check-failures #(max 0 (dec %)))
+        (swap! heal-check-failures inc))
+      (log/infof "Health check failures %s" @heal-check-failures)
       (Thread/sleep health-check-interval)))
-  (log/warn "Shutting down; health check failed")
+  (log/fatal "Shutting down; health checks failed")
+  (stop)
   (System/exit 1))

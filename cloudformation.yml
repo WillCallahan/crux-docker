@@ -1,0 +1,107 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >
+  Crux Node ECS Stack
+
+Parameters:
+  NetworkStackName:
+    Type: String
+    Description: Name of the Network Stack
+    Default: network-stack
+
+  EcsClusterStackName:
+    Type: String
+    Description: Name of the Data Service Stack
+    Default: ecs-cluster-stack
+
+  EcrDockerImage:
+    Description: ECR Container Image of the Crux Node
+    Type: String
+    Default: database/crux:latest
+
+Resources:
+
+  CruxService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: !Sub ${AWS::StackName}
+      Cluster:
+        Fn::ImportValue:
+          !Sub ${EcsClusterStackName}-DataServiceClusterArn
+      DeploymentConfiguration:
+        MaximumPercent: 100
+        MinimumHealthyPercent: 50
+      DesiredCount: 2
+      LaunchType: FARGATE
+      TaskDefinition: !Ref CruxTaskDefinition
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          SecurityGroups:
+            - !Ref CruxSecurityHostGroup
+            - !Ref CruxSecurityClientGroup
+          Subnets:
+            - Fn::ImportValue:
+                !Sub ${NetworkStackName}-PrivateSubnet1
+            - Fn::ImportValue:
+                !Sub ${NetworkStackName}-PrivateSubnet2
+
+  CruxTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub ${AWS::StackName}-task
+      Cpu: 512
+      Memory: 4GB
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ContainerDefinitions:
+        - Name: !Sub ${AWS::StackName}
+          MemoryReservation: 512
+          DisableNetworking: false
+          PortMappings:
+            - ContainerPort: 3000
+              HostPort: 3000
+              Protocol: tcp
+          Privileged: false
+          ReadonlyRootFilesystem: false
+          DockerLabels:
+            Name: ${AWS::StackName}-task
+          Essential: true
+          Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrDockerImage}
+
+  CruxSecurityHostGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: ${AWS::StackName}-host-scty-grp
+      GroupDescription: Seciruty Group for the Crux Node
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          SourceSecurityGroupId: !Ref CruxSecurityClientGroup
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          SourceSecurityGroupId: !Ref CruxSecurityClientGroup
+      VpcId:
+        Fn::ImportValue:
+          !Sub ${NetworkStackName}-Vpc
+
+  CruxSecurityClientGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: ${AWS::StackName}-client-scty-grp
+      GroupDescription: Seciruty Group to acceess the Crux Node
+      VpcId:
+        Fn::ImportValue:
+          !Sub ${NetworkStackName}-Vpc
+
+Outputs:
+  CruxSecurityClientGroupName:
+    Description: Crux Node Client Security Group Name
+    Value: !Ref CruxSecurityClientGroup
+
+  CruxSecurityClientGroupId:
+    Description: Crux Node Client Security Group Id
+    Value: !GetAtt CruxSecurityClientGroup.GroupId

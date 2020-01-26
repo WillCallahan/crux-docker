@@ -1,0 +1,223 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >
+  Crux Node Server CI/CD Stack
+
+Parameters:
+  AccountName:
+    Description: Name of the account
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Default: /dev/account-name
+
+  GitHubOauthToken:
+    Description: GitHub OAuth Token for use by CodePipeline
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Default: /dev/github-code-pipeline-oauth
+
+  BuildSpecPath:
+    Description: Relative path to the buildspec.yml in the repo
+    Type: String
+    Default: buildspec.yml
+
+  RepoLocation:
+    Description: HTTPS clone URL to the repository that contains the source code and build spec
+    Type: String
+    Default: https://github.com/WillCallahan/crux-docker.git
+
+  EcrDockerBuildImage:
+    Description: ECR Container Image to user for building
+    Type: String
+    Default: build/openjdk-8-lein:latest
+
+  EcrDockerImage:
+    Description: ECR Container Image to push after docker image is built
+    Type: String
+    Default: database/crux
+
+  CruxStackName:
+    Description: Name of the Crux Node Stack to Create
+    Type: String
+    Default: crux-stack
+
+  BucketStackName:
+    Description: Name of the S3 Stack
+    Type: String
+    Default: bucket-stack
+
+  SecurityStackName:
+    Description: Name of the Security Stack
+    Type: String
+    Default: security-stack
+
+  LoggingStackName:
+    Description: Name of the Logging Stack
+    Type: String
+    Default: logging-stack
+
+  NetworkStackName:
+    Description: Name of the Network Stack
+    Type: String
+    Default: network-stack
+
+  NetworkSecurityStackName:
+    Description: Name of the Network Security Stack
+    Type: String
+    Default: network-security-stack
+
+Resources:
+
+  CruxCodeBuildLogSteam:
+    Type: AWS::Logs::LogStream
+    Properties:
+      LogGroupName:
+        Fn::ImportValue:
+          !Sub ${LoggingStackName}-CodeBuildLogGroupName
+      LogStreamName: !Sub ${AWS::StackName}-stream
+
+  CruxCodeBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        ArtifactIdentifier: !Sub ${AWS::StackName}
+        EncryptionDisabled: false
+        Type: CODEPIPELINE
+      Cache:
+        Location: NO_CACHE
+        Type: NO_CACHE
+      Description: !Sub Crux (${AWS::StackName})
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        EnvironmentVariables:
+          - Name: STACK_NAME
+            Value: !Sub ${AWS::StackName}
+          - Name: AWS_ECR_REPOSITORY_URI
+            Value: !Sub arn:${AWS::Partition}:ecr:${AWS::StackName}:${AWS::AccountId}:${EcrDockerImage}
+        Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrDockerBuildImage}
+        ImagePullCredentialsType: SERVICE_ROLE
+        PrivilegedMode: true
+        Type: LINUX_CONTAINER
+      LogsConfig:
+        CloudWatchLogs:
+          GroupName:
+            Fn::ImportValue:
+              !Sub ${LoggingStackName}-CodeBuildLogGroupName
+          Status: ENABLED
+          StreamName: !Ref CruxCodeBuildLogSteam
+      Name: !Sub ${AWS::StackName}
+      QueuedTimeoutInMinutes: 30
+      ServiceRole:
+        Fn::ImportValue:
+          !Sub ${SecurityStackName}-CodeBuildRoleArn
+      Source:
+        BuildSpec: !Ref BuildSpecPath
+        GitCloneDepth: 0
+        Type: CODEPIPELINE
+      SourceVersion: refs/heads/master
+      Tags:
+        - Key: Service
+          Value: Code Build
+        - Key: Provider
+          Value: AWS
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-code-build
+      TimeoutInMinutes: 30
+      VpcConfig:
+        SecurityGroupIds:
+          - Fn::ImportValue:
+              !Sub ${NetworkSecurityStackName}-CodeBuildSecurityGroup
+        Subnets:
+          - Fn::ImportValue:
+              !Sub ${NetworkStackName}-PrivateSubnet1
+          - Fn::ImportValue:
+              !Sub ${NetworkStackName}-PrivateSubnet2
+        VpcId:
+          Fn::ImportValue:
+            !Sub ${NetworkStackName}-Vpc
+
+  CruxCodePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: !Sub ${AWS::StackName}
+      RoleArn:
+        Fn::ImportValue:
+          !Sub ${SecurityStackName}-CodePipelineRoleArn
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: SourceAction
+              Namespace: !Sub ${AWS::StackName}-source-ns
+              Region: !Sub ${AWS::Region}
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Version: 1
+                Provider: GitHub
+              OutputArtifacts:
+                - Name: !Sub ${AWS::StackName}-source
+              Configuration:
+                Owner: WillCallahan
+                Repo: crux-docker
+                Branch: master
+                OAuthToken: !Ref GitHubOauthToken
+                PollForSourceChanges: false
+              RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: BuildAction
+              Namespace: !Sub ${AWS::StackName}-build-ns
+              Region: !Sub ${AWS::Region}
+              InputArtifacts:
+                - Name: !Sub ${AWS::StackName}-source
+              OutputArtifacts:
+                - Name: !Sub ${AWS::StackName}-build
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref CruxCodeBuild
+              RunOrder: 2
+        - Name: Approval
+          Actions:
+            - Name: ApprovalAction
+              Namespace: !Sub ${AWS::StackName}-approval-ns
+              Region: !Sub ${AWS::Region}
+              ActionTypeId:
+                Category: Approval
+                Owner: AWS
+                Version: 1
+                Provider: Manual
+              RunOrder: 3
+        - Name: Deploy
+          Actions:
+            - Name: DeployAction
+              Namespace: !Sub ${AWS::StackName}-deploy-ns
+              Region: !Sub ${AWS::Region}
+              InputArtifacts:
+                - Name: !Sub ${AWS::StackName}-source
+                - Name: !Sub ${AWS::StackName}-build
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                ActionMode: REPLACE_ON_FAILURE
+                StackName: !Ref CruxStackName
+                Capabilities: CAPABILITY_IAM
+                RoleArn:
+                  Fn::ImportValue:
+                    !Sub ${SecurityStackName}-CodePipelineRoleArn
+                TemplatePath: !Sub ${AWS::StackName}-source::cloudformation.yml
+                OutputFileName: !Sub ${AWS::StackName}-stack.json
+                TemplateConfiguration: !Sub ${AWS::StackName}-build::cloudformation-template-configuration.json
+              RunOrder: 4
+      ArtifactStore:
+        Type: S3
+        Location:
+          Fn::ImportValue:
+            !Sub ${BucketStackName}-CodePipelineBucketName
+
+Outputs:
+  CruxCodeBuildName:
+    Value: !Ref CruxCodeBuild
