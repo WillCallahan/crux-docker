@@ -21,11 +21,8 @@ phases:
       - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
       - BUILD_ENV_NAME="BUILD_ARTIFACT_NAME_${BUILD_ARTIFACT_NAME}"
       - echo "BUILD_ENV_NAME ${BUILD_ENV_NAME}"
-      - BUILD_DIRECTORY="${!BUILD_ENV_NAME}"
+      - BUILD_DIRECTORY=$(eval "\$${BUILD_ENV_NAME}")
       - echo "BUILD_DIRECTORY ${BUILD_ENV_NAME}"
-      - ls -la
-      - echo ${BUILD_VERSION}
-      - echo ${BUILD_DIRECTORY}
       - IMAGE_TAG=${BUILD_VERSION:=latest}
 
   pre_build:
