@@ -24,9 +24,14 @@ phases:
     commands:
       - lein uberjar
 
+  post_build:
+    finally:
+      - echo ${BUILD_VERSION} > version
+
 artifacts:
   base-directory: target
   files:
     - 'crux-docker-standalone.jar'
+    - 'version'
   discard-paths: yes
   name: crux-docker-standalone-${BUILD_VERSION}

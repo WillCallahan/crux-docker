@@ -6,7 +6,6 @@ env:
     CRUX_VERSION: 19.09-1.5.0-alpha
     AWS_REGION: us-east-1
     AWS_ECR_REPOSITORY_URI: arn:<AWS_PARTITION>:ecr:<AWS_REGION>:<AWS_ACCOUNT_ID>:<ECR_REPOSITORY>
-    BUILD_VERSION: <BUILD_VERSION>
 
   exported-variables:
     - BUILD_VERSION
@@ -19,7 +18,7 @@ phases:
     commands:
       - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 --storage-driver=overlay&
       - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
-      - BUILD_ENV_NAME="BUILD_ARTIFACT_NAME_${BUILD_ARTIFACT_NAME}"
+      - BUILD_ENV_NAME="CODEBUILD_SRC_DIR_${BUILD_ARTIFACT_NAME}"
       - echo "BUILD_ENV_NAME ${BUILD_ENV_NAME}"
       - BUILD_DIRECTORY=$(eval "echo \$${BUILD_ENV_NAME}")
       - echo "BUILD_DIRECTORY ${BUILD_ENV_NAME}"
@@ -32,7 +31,9 @@ phases:
 
   build:
     commands:
+      - ls -la ../
       - ls -la
+      - pwd
       - cd "${BUILD_DIRECTORY}"
       - ls -la
       - docker build --build-arg JAR_FILE=crux-docker-standalone.jar -t ${AWS_ECR_REPOSITORY_URI}:latest .
@@ -40,7 +41,8 @@ phases:
 
   post_build:
     commands:
-      - cat '{}' > cloudformation-template-configuration.json
+      - echo '{}' > cloudformation-template-configuration.json
+      - cat cloudformation-template-configuration.json
       - docker push ${AWS_ECR_REPOSITORY_URI}:latest
       - docker push ${AWS_ECR_REPOSITORY_URI}:${IMAGE_TAG}
 

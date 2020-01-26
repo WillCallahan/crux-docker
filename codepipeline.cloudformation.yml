@@ -98,10 +98,15 @@ Resources:
         EncryptionDisabled: false
         Type: CODEPIPELINE
       Cache:
-        Location: LOCAL
+        Location:
+          !Sub
+            - ${BucketName}/${AWS::StackName}
+            - BucketName:
+                Fn::ImportValue:
+                  !Sub ${BucketStackName}-CodeBuildCacheS3BucketName
         Modes:
           - LOCAL_CUSTOM_CACHE
-        Type: LOCAL
+        Type: S3
       Description: !Sub Crux (${AWS::StackName})
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
