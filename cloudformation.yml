@@ -10,8 +10,13 @@ Parameters:
 
   EcsClusterStackName:
     Type: String
-    Description: Name of the Data Service Stack
+    Description: Name of the Ecs Cluster Stack
     Default: ecs-cluster-stack
+
+  SecurityStackName:
+    Type: String
+    Description: Name of the Security Stack
+    Default: security-stack
 
   EcrDockerImage:
     Description: ECR Container Image of the Crux Node
@@ -26,7 +31,7 @@ Resources:
       ServiceName: !Sub ${AWS::StackName}
       Cluster:
         Fn::ImportValue:
-          !Sub ${EcsClusterStackName}-DataServiceClusterArn
+          !Sub ${EcsClusterStackName}-DatabaseClusterArn
       DeploymentConfiguration:
         MaximumPercent: 100
         MinimumHealthyPercent: 50
@@ -68,6 +73,14 @@ Resources:
             Name: ${AWS::StackName}-task
           Essential: true
           Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrDockerImage}
+          LogConfiguration:
+            LogDriver: awslogs
+      ExecutionRoleArn:
+        Fn::ImportValue:
+          !Sub ${SecurityStackName}-FargateReadonlyRoleArn
+      TaskRoleArn:
+        Fn::ImportValue:
+          !Sub ${SecurityStackName}-FargateReadonlyRoleArn
 
   CruxSecurityHostGroup:
     Type: AWS::EC2::SecurityGroup
