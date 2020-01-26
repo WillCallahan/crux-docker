@@ -21,7 +21,7 @@ Parameters:
   BuildSpecEcrPath:
     Description: Relative path to the buildspec.yml in the repo for posting to ECR
     Type: String
-    Default: buildspec.yml
+    Default: ecr.buildspec.yml
 
   RepoLocation:
     Description: HTTPS clone URL to the repository that contains the source code and build spec
@@ -141,13 +141,13 @@ Resources:
     Type: AWS::CodeBuild::Project
     Properties:
       Artifacts:
-        ArtifactIdentifier: !Sub ${AWS::StackName}
+        ArtifactIdentifier: !Sub ${AWS::StackName}-ecr
         EncryptionDisabled: false
         Type: CODEPIPELINE
       Cache:
         Location: NO_CACHE
         Type: NO_CACHE
-      Description: !Sub Crux (${AWS::StackName})
+      Description: !Sub Crux (${AWS::StackName}-ecr)
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
         EnvironmentVariables:
@@ -156,7 +156,7 @@ Resources:
           - Name: AWS_ECR_REPOSITORY_URI
             Value: !Sub arn:${AWS::Partition}:ecr:${AWS::StackName}:${AWS::AccountId}:${EcrDockerImage}
         Image: aws/codebuild/standard:2.0
-        ImagePullCredentialsType: SERVICE_ROLE
+        ImagePullCredentialsType: CODEBUILD
         PrivilegedMode: true
         Type: LINUX_CONTAINER
       LogsConfig:
@@ -166,7 +166,7 @@ Resources:
               !Sub ${LoggingStackName}-CodeBuildLogGroupName
           Status: ENABLED
           StreamName: !Ref CruxCodeBuildLogSteam
-      Name: !Sub ${AWS::StackName}-code-build
+      Name: !Sub ${AWS::StackName}-ecr-code-build
       QueuedTimeoutInMinutes: 30
       ServiceRole:
         Fn::ImportValue:
@@ -182,7 +182,7 @@ Resources:
         - Key: Provider
           Value: AWS
         - Key: Name
-          Value: !Sub ${AWS::StackName}-code-build
+          Value: !Sub ${AWS::StackName}-ecr-code-build
       TimeoutInMinutes: 30
       VpcConfig:
         SecurityGroupIds:
@@ -245,6 +245,7 @@ Resources:
               Namespace: !Sub ${AWS::StackName}-ecr-push-ns
               Region: !Sub ${AWS::Region}
               InputArtifacts:
+                - Name: !Sub ${AWS::StackName}-source
                 - Name: !Sub ${AWS::StackName}-build
               ActionTypeId:
                 Category: Build
@@ -253,6 +254,10 @@ Resources:
                 Provider: CodeBuild
               Configuration:
                 ProjectName: !Ref CruxEcrCodeBuild
+                PrimarySource: !Sub ${AWS::StackName}-source
+                EnvironmentVariables:
+                  SOURCE_ARTIFACT_NAME: !Sub ${AWS::StackName}-source
+                  BUILD_ARTIFACT_NAME: !Sub ${AWS::StackName}-build
               RunOrder: 3
         - Name: Approval
           Actions:
