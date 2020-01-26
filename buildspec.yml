@@ -14,6 +14,8 @@ env:
 phases:
   install:
     commands:
+      - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 --storage-driver=overlay&
+      - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
       - BRANCH_NAME=$(echo "${CODEBUILD_SOURCE_VERSION}" | sed 's/refs\/heads\///')
       - UTC_DATE=$(date --utc +%FT%H-%M-%S%Z)
       - COMMIT_HASH=$(echo ${CODEBUILD_RESOLVED_SOURCE_VERSION} | cut -c1-8)

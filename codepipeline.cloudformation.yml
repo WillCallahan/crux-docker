@@ -102,7 +102,7 @@ Resources:
               !Sub ${LoggingStackName}-CodeBuildLogGroupName
           Status: ENABLED
           StreamName: !Ref CruxCodeBuildLogSteam
-      Name: !Sub ${AWS::StackName}
+      Name: !Sub ${AWS::StackName}-code-build
       QueuedTimeoutInMinutes: 30
       ServiceRole:
         Fn::ImportValue:
