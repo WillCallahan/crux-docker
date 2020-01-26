@@ -48,6 +48,7 @@ phases:
       - docker push ${AWS_ECR_REPOSITORY_URI}:${IMAGE_TAG}
 
 artifacts:
+  base-directory: ${BUILD_DIRECTORY}
   files:
     - 'cloudformation-template-configuration.json'
   discard-paths: yes

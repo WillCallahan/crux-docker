@@ -295,9 +295,9 @@ Resources:
                           - Name: BUILD_ARTIFACT_NAME
                             Value: !Sub ${CodePipelineArtifactPrefix}_build
                         - !Sub
-                          - '{"name":"${Name}","value":"#{${Value}}","type":"PLAINTEXT"}'
+                          - '{"name":"${Name}","value":"${Value}","type":"PLAINTEXT"}'
                           - Name: BUILD_VERSION
-                            Value: !Sub ${CodePipelineArtifactPrefix}_build_ns.BUILD_VERSION
+                            Value: !Sub '#{${CodePipelineArtifactPrefix}_build_ns.BUILD_VERSION}'
               RunOrder: 3
         - Name: Approval
           Actions:
