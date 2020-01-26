@@ -24,6 +24,7 @@ phases:
       - BUILD_DIRECTORY=$(eval "echo \$${BUILD_ENV_NAME}")
       - BUILD_VERSION=$(cat "${BUILD_DIRECTORY}/version")
       - IMAGE_TAG=${BUILD_VERSION:=latest}
+      - echo "SOURCE_DIRECTORY ${SOURCE_DIRECTORY}"
       - echo "BUILD_ENV_NAME ${BUILD_ENV_NAME}"
       - echo "BUILD_DIRECTORY ${BUILD_DIRECTORY}"
       - echo "BUILD_VERSION ${BUILD_VERSION}"
@@ -36,7 +37,6 @@ phases:
   build:
     commands:
       - cd "${BUILD_DIRECTORY}"
-      - cp "${SOURCE_DIRECTORY}/Dockerfile" .
       - docker build --build-arg JAR_FILE=crux-docker-standalone.jar -t ${AWS_ECR_REPOSITORY_URI}:latest .
       - docker tag ${AWS_ECR_REPOSITORY_URI}:latest ${AWS_ECR_REPOSITORY_URI}:${IMAGE_TAG}
 
@@ -56,4 +56,4 @@ artifacts:
 
 cache:
   paths:
-    - '/root/.m2/**/*'
+    - '~/.m2/**/*'
