@@ -40,7 +40,7 @@ Resources:
       DeploymentConfiguration:
         MaximumPercent: 100
         MinimumHealthyPercent: 50
-      DesiredCount: 2
+      DesiredCount: 1
       LaunchType: FARGATE
       TaskDefinition: !Ref CruxTaskDefinition
       NetworkConfiguration:
@@ -60,13 +60,12 @@ Resources:
     Properties:
       Family: !Sub ${AWS::StackName}-task
       Cpu: 512
-      Memory: 4GB
+      Memory: 2GB
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
       ContainerDefinitions:
         - Name: !Sub ${AWS::StackName}
-          MemoryReservation: 512
           DisableNetworking: false
           PortMappings:
             - ContainerPort: 3000
