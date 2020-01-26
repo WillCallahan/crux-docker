@@ -115,6 +115,8 @@ Resources:
             Value: !Sub ${AWS::StackName}
           - Name: AWS_ECR_REPOSITORY_URI
             Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrDockerImage}
+          - Name: BRANCH_NAME
+            Value: !Ref GitHubBranchName
         Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrDockerBuildImage}
         ImagePullCredentialsType: SERVICE_ROLE
         Type: LINUX_CONTAINER
@@ -174,6 +176,8 @@ Resources:
             Value: !Sub ${AWS::StackName}
           - Name: AWS_ECR_REPOSITORY_URI
             Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrDockerImage}
+          - Name: BRANCH_NAME
+            Value: !Ref GitHubBranchName
         Image: aws/codebuild/standard:2.0
         ImagePullCredentialsType: CODEBUILD
         PrivilegedMode: true

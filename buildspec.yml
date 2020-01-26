@@ -6,14 +6,13 @@ env:
 
   exported-variables:
     - BUILD_VERSION
-    - IMAGE_TAG
+    - BRANCH_NAME
 
 phases:
   install:
     runtime-versions:
       docker: 18
     commands:
-      - BRANCH_NAME=$(echo "${CODEBUILD_SOURCE_VERSION}" | sed 's/refs\/heads\///')
       - UTC_DATE=$(date --utc +%FT%H-%M-%S%Z)
       - COMMIT_HASH=$(echo ${CODEBUILD_RESOLVED_SOURCE_VERSION} | cut -c1-8)
       - BUILD_VERSION=${BRANCH_NAME}-${UTC_DATE}-${COMMIT_HASH}
