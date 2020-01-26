@@ -18,6 +18,11 @@ Parameters:
     Type: String
     Default: buildspec.yml
 
+  BuildSpecEcrPath:
+    Description: Relative path to the buildspec.yml in the repo for posting to ECR
+    Type: String
+    Default: buildspec.yml
+
   RepoLocation:
     Description: HTTPS clone URL to the repository that contains the source code and build spec
     Type: String
@@ -93,7 +98,6 @@ Resources:
             Value: !Sub arn:${AWS::Partition}:ecr:${AWS::StackName}:${AWS::AccountId}:${EcrDockerImage}
         Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrDockerBuildImage}
         ImagePullCredentialsType: SERVICE_ROLE
-        PrivilegedMode: true
         Type: LINUX_CONTAINER
       LogsConfig:
         CloudWatchLogs:
@@ -109,6 +113,66 @@ Resources:
           !Sub ${SecurityStackName}-CodeBuildRoleArn
       Source:
         BuildSpec: !Ref BuildSpecPath
+        GitCloneDepth: 0
+        Type: CODEPIPELINE
+      SourceVersion: refs/heads/master
+      Tags:
+        - Key: Service
+          Value: Code Build
+        - Key: Provider
+          Value: AWS
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-code-build
+      TimeoutInMinutes: 30
+      VpcConfig:
+        SecurityGroupIds:
+          - Fn::ImportValue:
+              !Sub ${NetworkSecurityStackName}-CodeBuildSecurityGroup
+        Subnets:
+          - Fn::ImportValue:
+              !Sub ${NetworkStackName}-PrivateSubnet1
+          - Fn::ImportValue:
+              !Sub ${NetworkStackName}-PrivateSubnet2
+        VpcId:
+          Fn::ImportValue:
+            !Sub ${NetworkStackName}-Vpc
+
+  CruxEcrCodeBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        ArtifactIdentifier: !Sub ${AWS::StackName}
+        EncryptionDisabled: false
+        Type: CODEPIPELINE
+      Cache:
+        Location: NO_CACHE
+        Type: NO_CACHE
+      Description: !Sub Crux (${AWS::StackName})
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        EnvironmentVariables:
+          - Name: STACK_NAME
+            Value: !Sub ${AWS::StackName}
+          - Name: AWS_ECR_REPOSITORY_URI
+            Value: !Sub arn:${AWS::Partition}:ecr:${AWS::StackName}:${AWS::AccountId}:${EcrDockerImage}
+        Image: aws/codebuild/standard:2.0
+        ImagePullCredentialsType: SERVICE_ROLE
+        PrivilegedMode: true
+        Type: LINUX_CONTAINER
+      LogsConfig:
+        CloudWatchLogs:
+          GroupName:
+            Fn::ImportValue:
+              !Sub ${LoggingStackName}-CodeBuildLogGroupName
+          Status: ENABLED
+          StreamName: !Ref CruxCodeBuildLogSteam
+      Name: !Sub ${AWS::StackName}-code-build
+      QueuedTimeoutInMinutes: 30
+      ServiceRole:
+        Fn::ImportValue:
+          !Sub ${SecurityStackName}-CodeBuildRoleArn
+      Source:
+        BuildSpec: !Ref BuildSpecEcrPath
         GitCloneDepth: 0
         Type: CODEPIPELINE
       SourceVersion: refs/heads/master
@@ -177,6 +241,19 @@ Resources:
               Configuration:
                 ProjectName: !Ref CruxCodeBuild
               RunOrder: 2
+            - Name: EcrPushAction
+              Namespace: !Sub ${AWS::StackName}-ecr-push-ns
+              Region: !Sub ${AWS::Region}
+              InputArtifacts:
+                - Name: !Sub ${AWS::StackName}-build
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref CruxEcrCodeBuild
+              RunOrder: 3
         - Name: Approval
           Actions:
             - Name: ApprovalAction
@@ -187,7 +264,7 @@ Resources:
                 Owner: AWS
                 Version: 1
                 Provider: Manual
-              RunOrder: 3
+              RunOrder: 4
         - Name: Deploy
           Actions:
             - Name: DeployAction
@@ -211,7 +288,7 @@ Resources:
                 TemplatePath: !Sub ${AWS::StackName}-source::cloudformation.yml
                 OutputFileName: !Sub ${AWS::StackName}-stack.json
                 TemplateConfiguration: !Sub ${AWS::StackName}-build::cloudformation-template-configuration.json
-              RunOrder: 4
+              RunOrder: 5
       ArtifactStore:
         Type: S3
         Location:
