@@ -21,7 +21,7 @@ phases:
       - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
       - BUILD_ENV_NAME="BUILD_ARTIFACT_NAME_${BUILD_ARTIFACT_NAME}"
       - echo "BUILD_ENV_NAME ${BUILD_ENV_NAME}"
-      - BUILD_DIRECTORY=$(eval "\$${BUILD_ENV_NAME}")
+      - BUILD_DIRECTORY=$(eval "echo \$${BUILD_ENV_NAME}")
       - echo "BUILD_DIRECTORY ${BUILD_ENV_NAME}"
       - IMAGE_TAG=${BUILD_VERSION:=latest}
 
@@ -38,7 +38,6 @@ phases:
   post_build:
     commands:
       - cat '{}' > cloudformation-template-configuration.json
-    finally:
       - docker push ${AWS_ECR_REPOSITORY_URI}:latest
       - docker push ${AWS_ECR_REPOSITORY_URI}:${IMAGE_TAG}
 
@@ -51,4 +50,4 @@ artifacts:
 
 cache:
   paths:
-    - '~/.m2/**/*'
+    - '/root/.m2/**/*'

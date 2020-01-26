@@ -17,7 +17,7 @@ Parameters:
   GitHubBranchName:
     Description: GitHub branch to use by default
     Type: String
-    Default: mater
+    Default: master
 
   BuildSpecPath:
     Description: Relative path to the buildspec.yml in the repo
@@ -99,7 +99,8 @@ Resources:
         Type: CODEPIPELINE
       Cache:
         Location: LOCAL
-        Modes: LOCAL_CUSTOM_CACHE
+        Modes:
+          - LOCAL_CUSTOM_CACHE
         Type: LOCAL
       Description: !Sub Crux (${AWS::StackName})
       Environment:
@@ -108,7 +109,7 @@ Resources:
           - Name: STACK_NAME
             Value: !Sub ${AWS::StackName}
           - Name: AWS_ECR_REPOSITORY_URI
-            Value: !Sub arn:${AWS::Partition}:ecr:${AWS::StackName}:${AWS::AccountId}:${EcrDockerImage}
+            Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrDockerImage}
         Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrDockerBuildImage}
         ImagePullCredentialsType: SERVICE_ROLE
         Type: LINUX_CONTAINER
@@ -167,7 +168,7 @@ Resources:
           - Name: STACK_NAME
             Value: !Sub ${AWS::StackName}
           - Name: AWS_ECR_REPOSITORY_URI
-            Value: !Sub arn:${AWS::Partition}:ecr:${AWS::StackName}:${AWS::AccountId}:${EcrDockerImage}
+            Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrDockerImage}
         Image: aws/codebuild/standard:2.0
         ImagePullCredentialsType: CODEBUILD
         PrivilegedMode: true
