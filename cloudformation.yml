@@ -18,6 +18,11 @@ Parameters:
     Description: Name of the Security Stack
     Default: security-stack
 
+  LoggingStackName:
+    Description: Name of the Logging Stack
+    Type: String
+    Default: logging-stack
+
   EcrDockerImage:
     Description: ECR Container Image of the Crux Node
     Type: String
@@ -70,11 +75,17 @@ Resources:
           Privileged: false
           ReadonlyRootFilesystem: false
           DockerLabels:
-            Name: ${AWS::StackName}-task
+            Name: !Sub ${AWS::StackName}-task
           Essential: true
           Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrDockerImage}
           LogConfiguration:
             LogDriver: awslogs
+            Options:
+              awslogs-group:
+                Fn::ImportValue:
+                  !Sub ${LoggingStackName}-DatabaseLogGroupName
+              awslogs-region: !Sub ${AWS::Region}
+              awslogs-stream-prefix: !Sub ${AWS::StackName}
       ExecutionRoleArn:
         Fn::ImportValue:
           !Sub ${SecurityStackName}-FargateReadonlyRoleArn
