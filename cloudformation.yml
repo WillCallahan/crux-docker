@@ -242,10 +242,14 @@ Outputs:
   CruxSecurityClientGroupName:
     Description: Crux Node Client Security Group Name
     Value: !Ref CruxSecurityClientGroup
+    Export:
+      Name: !Sub ${AWS::StackName}-CruxSecurityClientGroupName
 
   CruxSecurityClientGroupId:
     Description: Crux Node Client Security Group Id
     Value: !GetAtt CruxSecurityClientGroup.GroupId
+    Export:
+      Name: !Sub ${AWS::StackName}-CruxSecurityClientGroupId
 
   CruxLoadBalancerDnsName:
     Description: Crux Load Balancer Dns Name
