@@ -49,8 +49,7 @@ Resources:
       Name: !Sub ${AWS::StackName}-elb
       Scheme: internal
       SecurityGroups:
-        - !Ref CruxSecurityHostGroup
-        - !Ref CruxSecurityClientGroup
+        - !Ref CruxLoabBalancerSecurityGroup
       Subnets:
         - Fn::ImportValue:
             !Sub ${NetworkStackName}-PrivateSubnet1
@@ -122,8 +121,7 @@ Resources:
         AwsvpcConfiguration:
           AssignPublicIp: DISABLED
           SecurityGroups:
-            - !Ref CruxSecurityHostGroup
-            - !Ref CruxSecurityClientGroup
+            - !Ref CruxHostSecurityGroup
           Subnets:
             - Fn::ImportValue:
                 !Sub ${NetworkStackName}-PrivateSubnet1
@@ -196,16 +194,14 @@ Resources:
         - Key: Name
           Value: !Sub ${AWS::StackName}-ecs-cd
 
-  CruxSecurityHostGroup:
+  CruxLoabBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: !Sub ${AWS::StackName}-host-scty-grp
-      GroupDescription: Seciruty Group for the Crux Node
+      GroupName: !Sub ${AWS::StackName}-elb-sg
+      GroupDescription: Seciruty Group for the Crux Elastic Load Balancer
       SecurityGroupEgress:
-        - IpProtocol: tcp
-          FromPort: 0
-          ToPort: 65535
-          DestinationSecurityGroupId: !Ref CruxSecurityClientGroup
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 3000
@@ -220,12 +216,36 @@ Resources:
         - Key: Provider
           Value: Juxt
         - Key: Name
-          Value: !Sub ${AWS::StackName}-host-sq
+          Value: !Sub ${AWS::StackName}-elb-sg
+
+  CruxHostSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${AWS::StackName}-host-sg
+      GroupDescription: Seciruty Group for the Crux Node
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          SourceSecurityGroupId: !Ref CruxLoabBalancerSecurityGroup
+      VpcId:
+        Fn::ImportValue:
+          !Sub ${NetworkStackName}-Vpc
+      Tags:
+        - Key: Service
+          Value: Crux
+        - Key: Provider
+          Value: Juxt
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-host-sg
 
   CruxSecurityClientGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: !Sub ${AWS::StackName}-client-scty-grp
+      GroupName: !Sub ${AWS::StackName}-client-sg
       GroupDescription: Seciruty Group to acceess the Crux Node
       VpcId:
         Fn::ImportValue:
