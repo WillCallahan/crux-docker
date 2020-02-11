@@ -144,7 +144,7 @@ Resources:
     Properties:
       Family: !Sub ${AWS::StackName}-task
       Cpu: 512
-      Memory: 2GB
+      Memory: 1GB
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE

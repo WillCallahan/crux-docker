@@ -13,3 +13,6 @@ pom.xml.asc
 /dev-storage
 /data
 .idea
+
+# Application Settings
+crux-storage
