@@ -1,8 +1,6 @@
-FROM clojure:openjdk-8-lein
+FROM openjdk:8-alpine
 
 COPY . /app
-
-ENV LOG_DIR /app/logs
 
 EXPOSE 3000/tcp
 
