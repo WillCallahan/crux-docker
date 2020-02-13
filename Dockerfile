@@ -1,4 +1,4 @@
-FROM openjdk:8-alpine
+FROM clojure:openjdk-8-lein
 
 COPY . /app
 
