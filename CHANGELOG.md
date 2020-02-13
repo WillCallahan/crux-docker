@@ -3,22 +3,17 @@ All notable changes to this project will be documented in this file. This change
 
 ## [Unreleased]
 ### Changed
-- Add a new arity to `make-widget-async` to provide a different widget shape.
+- Added production logging configuration
+- Added local health checks
 
-## [0.1.1] - 2020-01-19
+## [0.1.0] - 2020-02-13
 ### Changed
-- Documentation on how to make the widgets.
+- cloudformation.yml - Added DeploymentConfiguration
+- LICENSE - Changed to MIT
+- Added comments to CodeBuild Approval dialog
 
 ### Removed
-- `make-widget-sync` - we're all async, all the time.
-
-### Fixed
-- Fixed widget maker to keep working when daylight savings switches over.
-
-## 0.1.0 - 2020-01-19
-### Added
-- Files from the new template.
-- Widget maker public API - `make-widget-sync`.
+- Unused `LOG_DIR` environment variable from Dockerfile
 
 [Unreleased]: https://github.com/your-name/crux-docker/compare/0.1.1...HEAD
 [0.1.1]: https://github.com/your-name/crux-docker/compare/0.1.0...0.1.1

@@ -309,6 +309,9 @@ Resources:
                 Owner: AWS
                 Version: 1
                 Provider: Manual
+              Configuration:
+                CustomData: !Sub 'Build Version: #{${CodePipelineArtifactPrefix}_build_ns.BUILD_VERSION}'
+                ExternalEntityLink: !Sub 'https://console.${AWS::Partition}.amazon.com/ecr/repositories/${EcrDockerImage}/?region=${AWS::Region}'
               RunOrder: 4
         - Name: Deploy
           Actions:
