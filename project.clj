@@ -1,4 +1,4 @@
-(def crux-version (or (System/getenv "CRUX_VERSION") "19.09-1.5.0-alpha"))
+(def crux-version (or (System/getenv "CRUX_VERSION") "19.12-1.6.0-alpha"))
 (defproject crux-docker "0.1.0-SNAPSHOT"
   :description "FIXME: write description"
   :url "http://example.com/FIXME"

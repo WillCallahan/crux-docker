@@ -2,7 +2,7 @@ version: 0.2
 
 env:
   variables:
-    CRUX_VERSION: 19.09-1.5.0-alpha
+    CRUX_VERSION: 19.12-1.6.0-alpha
 
   exported-variables:
     - BUILD_VERSION
@@ -34,3 +34,7 @@ artifacts:
     - 'Dockerfile'
   discard-paths: yes
   name: crux-docker-standalone-${BUILD_VERSION}
+
+cache:
+  paths:
+    - '~/.m2/**/*'

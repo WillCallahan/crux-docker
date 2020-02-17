@@ -2,8 +2,6 @@ version: 0.2
 
 env:
   variables:
-    LOG_DIR: logs
-    CRUX_VERSION: 19.09-1.5.0-alpha
     AWS_REGION: us-east-1
     AWS_ECR_REPOSITORY_URI: arn:<AWS_PARTITION>:ecr:<AWS_REGION>:<AWS_ACCOUNT_ID>:<ECR_REPOSITORY>
     BUILD_ARTIFACT_NAME: <BUILD_ARTIFACT_NAME>
@@ -53,7 +51,3 @@ artifacts:
     - 'cloudformation-template-configuration.json'
   discard-paths: yes
   name: crux-docker-ecr-standalone-${BUILD_VERSION}
-
-cache:
-  paths:
-    - '~/.m2/**/*'

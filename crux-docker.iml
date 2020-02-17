@@ -5,8 +5,8 @@
     <output-test url="file://$MODULE_DIR$/target/classes" />
     <exclude-output />
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/dev-resources" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/resources" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
@@ -42,13 +42,13 @@
     <orderEntry type="library" name="Leiningen: javax.servlet/javax.servlet-api:3.1.0" level="project" />
     <orderEntry type="library" name="Leiningen: javax.xml.bind/jaxb-api:2.3.0" level="project" />
     <orderEntry type="library" name="Leiningen: joda-time:2.9.9" level="project" />
-    <orderEntry type="library" name="Leiningen: juxt/crux-core:19.09-1.5.0-alpha" level="project" />
-    <orderEntry type="library" name="Leiningen: juxt/crux-http-client:19.09-1.5.0-alpha" level="project" />
-    <orderEntry type="library" name="Leiningen: juxt/crux-http-server:19.09-1.5.0-alpha" level="project" />
-    <orderEntry type="library" name="Leiningen: juxt/crux-kafka-connect:19.09-1.5.0-alpha" level="project" />
-    <orderEntry type="library" name="Leiningen: juxt/crux-kafka:19.09-1.5.0-alpha" level="project" />
-    <orderEntry type="library" name="Leiningen: juxt/crux-rdf:19.09-1.5.0-alpha" level="project" />
-    <orderEntry type="library" name="Leiningen: juxt/crux-rocksdb:19.09-1.5.0-alpha" level="project" />
+    <orderEntry type="library" name="Leiningen: juxt/crux-core:19.12-1.6.0-alpha" level="project" />
+    <orderEntry type="library" name="Leiningen: juxt/crux-http-client:19.12-1.6.0-alpha" level="project" />
+    <orderEntry type="library" name="Leiningen: juxt/crux-http-server:19.12-1.6.0-alpha" level="project" />
+    <orderEntry type="library" name="Leiningen: juxt/crux-kafka-connect:19.12-1.6.0-alpha" level="project" />
+    <orderEntry type="library" name="Leiningen: juxt/crux-kafka:19.12-1.6.0-alpha" level="project" />
+    <orderEntry type="library" name="Leiningen: juxt/crux-rdf:19.12-1.6.0-alpha" level="project" />
+    <orderEntry type="library" name="Leiningen: juxt/crux-rocksdb:19.12-1.6.0-alpha" level="project" />
     <orderEntry type="library" name="Leiningen: net.jpountz.lz4/lz4:1.3" level="project" />
     <orderEntry type="library" name="Leiningen: nrepl:0.6.0" level="project" />
     <orderEntry type="library" name="Leiningen: org.agrona/agrona:1.0.7" level="project" />

@@ -1,6 +1,5 @@
 (ns crux-docker.core
-  "Internal development namespace for Crux. For end-user usage, see
-  examples.clj"
+  "Crux indexing server with local health checks"
   (:require [clojure.tools.logging :as log]
             [crux.node :as n]
             [crux.api :as crux]
