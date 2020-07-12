@@ -151,9 +151,9 @@ Resources:
               !Sub ${NetworkSecurityStackName}-CodeBuildSecurityGroup
         Subnets:
           - Fn::ImportValue:
-              !Sub ${NetworkStackName}-PrivateSubnet1
+              !Sub ${NetworkStackName}-PublicSubnet1
           - Fn::ImportValue:
-              !Sub ${NetworkStackName}-PrivateSubnet2
+              !Sub ${NetworkStackName}-PublicSubnet2
         VpcId:
           Fn::ImportValue:
             !Sub ${NetworkStackName}-Vpc
@@ -213,9 +213,9 @@ Resources:
               !Sub ${NetworkSecurityStackName}-CodeBuildSecurityGroup
         Subnets:
           - Fn::ImportValue:
-              !Sub ${NetworkStackName}-PrivateSubnet1
+              !Sub ${NetworkStackName}-PublicSubnet1
           - Fn::ImportValue:
-              !Sub ${NetworkStackName}-PrivateSubnet2
+              !Sub ${NetworkStackName}-PublicSubnet2
         VpcId:
           Fn::ImportValue:
             !Sub ${NetworkStackName}-Vpc

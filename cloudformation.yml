@@ -52,9 +52,9 @@ Resources:
         - !Ref CruxLoabBalancerSecurityGroup
       Subnets:
         - Fn::ImportValue:
-            !Sub ${NetworkStackName}-PrivateSubnet1
+            !Sub ${NetworkStackName}-PublicSubnet1
         - Fn::ImportValue:
-            !Sub ${NetworkStackName}-PrivateSubnet2
+            !Sub ${NetworkStackName}-PublicSubnet2
       Tags:
         - Key: Service
           Value: Crux
@@ -126,9 +126,9 @@ Resources:
             - !Ref CruxHostSecurityGroup
           Subnets:
             - Fn::ImportValue:
-                !Sub ${NetworkStackName}-PrivateSubnet1
+                !Sub ${NetworkStackName}-PublicSubnet1
             - Fn::ImportValue:
-                !Sub ${NetworkStackName}-PrivateSubnet2
+                !Sub ${NetworkStackName}-PublicSubnet2
       LoadBalancers:
         - ContainerName: !Sub ${AWS::StackName}-ecs-cd
           ContainerPort: 3000
