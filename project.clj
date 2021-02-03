@@ -4,7 +4,18 @@
   :url "http://example.com/FIXME"
   :license {:name "EPL-2.0 OR GPL-2.0-or-later WITH Classpath-exception-2.0"
             :url "https://www.eclipse.org/legal/epl-2.0/"}
-  :repositories [["releases" {:url "https://repo.clojars.org" :creds :gpg}]]
+  ;;:repositories [["releases" {:url "https://repo.clojars.org" :creds :gpg}]]
+  :mirrors {
+            "central" {
+                       :name "Nexus"
+                       :url "https://nexus.i.callahanwilliam.com/repository/maven-public/"
+                       :repo-manager true
+                       }
+            #"clojars" {
+                        :name "Nexus"
+                        :url "https://nexus.i.callahanwilliam.com/repository/maven-public/"
+                        :repo-manager true}
+            }
   :dependencies [[org.clojure/clojure "1.10.0"]
                  [org.apache.logging.log4j/log4j-api "2.11.0"]
                  [org.apache.logging.log4j/log4j-core "2.11.0"]

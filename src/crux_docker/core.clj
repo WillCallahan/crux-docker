@@ -25,7 +25,7 @@
    :crux.node/kv-store                    'crux.kv.rocksdb/kv
    :crux.kv/db-dir                        (get-env "STORAGE_DIR" (str storage-dir "/data") str)
    :crux.kv.memdb/persist-on-close?       true
-   :crux.kafka/bootstrap-servers          (get-env "KAFKA_BOOTSTRAP_SERVER" "10.0.127.51:9092" str)})
+   :crux.kafka/bootstrap-servers          (get-env "KAFKA_BOOTSTRAP_SERVER" "kafka.i.callahanwilliam.com:9092" str)})
 
 (defn dev-http-option-defaults []
   {:server-port (get-env "SERVER_PORT" 3000 parse-int)
